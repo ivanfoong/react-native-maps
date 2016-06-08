@@ -336,7 +336,7 @@ render() {
 
 ### Caching
 
-Caching map to image and displaying the cached image can be enabled by setting the prop `cacheEnabled` as `true`. 
+Caching map to image and displaying the cached image can be enabled by setting the prop `cacheEnabled` as `true`.
 `loadingIndicatorColor` and `loadingBackgroundColor` props will be used for cache loading indicator and background.
 Color of loading indicator and background can be customized via the `loadingIndicatorColor` and `loadingBackgroundColor` props
 Note: `MapView` will not be interactable as the map displayed is actually an image.
@@ -346,6 +346,42 @@ render() {
   return (
     <MapView cacheEnabled={true} loadingIndicatorColor={"#666666"} loadingBackgroundColor={"#eeeeee"} >
     </MapView>
+    );
+  }
+```
+
+### Take Snapshot of map
+currently only for ios, android implementation WIP
+
+```jsx
+getInitialState() {
+  return {
+    coordinate: {
+      latitude: LATITUDE,
+      longitude: LONGITUDE,
+    },
+  };
+}
+
+takeSnapshot () {
+  // arguments to 'takeSnapshot' are width, height, coordinates and callback
+  this.refs.map.takeSnapshot(300, 300, this.state.coordinate, (err, snapshot) => {
+    // snapshot contains image 'uri' - full path to image and 'data' - base64 encoded image
+    this.setState({ mapSnapshot: snapshot })
+  })
+}
+
+render() {
+  return (
+    <View>
+      <MapView initialRegion={...} ref="map">
+        <MapView.Marker coordinate={this.state.coordinate} />
+      </MapView>
+      <Image source={{ uri: this.state.mapSnapshot.uri }} />
+      <TouchableOpacity onPress={this.takeSnapshot}>
+        Take Snapshot
+      </TouchableOpacity>
+    </View>
   );
 }
 ```

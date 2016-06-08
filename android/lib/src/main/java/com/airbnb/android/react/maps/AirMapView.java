@@ -64,6 +64,8 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
     private boolean showUserLocation = false;
     private boolean isMonitoringRegion = false;
     private boolean isTouchDown = false;
+    private boolean handlePanDrag = false;
+
     private static final String[] PERMISSIONS = new String[] {
             "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"};
 
@@ -104,7 +106,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
                         view.startMonitoringRegion();
                         return true; // stop recording this gesture. let mapview handle it.
                     }
-                });
+        });
 
         gestureDetector =
                 new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
@@ -117,6 +119,9 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
                     @Override
                     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
                                             float distanceY) {
+                        if (handlePanDrag) {
+                            onPanDrag(e2);
+                        }
                         view.startMonitoringRegion();
                         return false;
                     }
@@ -363,6 +368,10 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
         }
     }
 
+    public void setHandlePanDrag(boolean handlePanDrag) {
+        this.handlePanDrag = handlePanDrag;
+    }
+
     public void addFeature(View child, int index) {
         // Our desired API is to pass up annotations/overlays as children to the mapview component.
         // This is where we intercept them and do the appropriate underlying mapview action.
@@ -405,7 +414,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
 
     public void removeFeatureAt(int index) {
         AirMapFeature feature = features.remove(index);
-        feature.removeFromMap(map);
+
 
         if (feature instanceof AirMapMarker) {
             markerMap.remove(feature.getFeature());
@@ -416,6 +425,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
         } else if (feature instanceof AirMapCircle) {
             circleMap.remove(feature.getFeature());
         }
+        feature.removeFromMap(map);
     }
 
     public WritableMap makeClickEventData(LatLng point) {
@@ -584,7 +594,6 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
         manager.pushEvent(markerView, "onDragEnd", event);
     }
 
-
     private ProgressBar getMapLoadingProgressBar() {
         if (this.mapLoadingProgressBar == null) {
             this.mapLoadingProgressBar = new ProgressBar(getContext());
@@ -665,5 +674,12 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
                 this.removeMapLoadingLayoutView();
             }
         }
+    }
+
+    public void onPanDrag(MotionEvent ev) {
+        Point point = new Point((int) ev.getX(), (int) ev.getY());
+        LatLng coords = this.map.getProjection().fromScreenLocation(point);
+        WritableMap event = makeClickEventData(coords);
+        manager.pushEvent(this, "onPanDrag", event);
     }
 }
